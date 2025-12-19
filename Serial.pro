@@ -38,3 +38,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 LIBS += -lsetupapi
+
+RC_FILE = windows_icon.rc
