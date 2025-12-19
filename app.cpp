@@ -29,6 +29,7 @@ App::App(QWidget *parent)
     serial::Timeout timeout = serial::Timeout::simpleTimeout(100);
     ser.setTimeout(timeout);
 
+    // 连接/断开
     connect(ui->pushButton, &QPushButton::clicked, this, [this](bool isCheck){
         if (isCheck) {
             int index = ui->comboBox->currentIndex();
@@ -41,17 +42,55 @@ App::App(QWidget *parent)
             ser.setBytesize(bytesize);
             ser.setStopbits(stopbits);
             ser.setParity(parity);
-            ser.open();
+            try {
+                ser.open();
+            } catch(const serial::IOException &e) {
+                QMessageBox::warning(this, "串口连接出错", QString("串口可能被占用, 错误代码:\n%1").arg(e.what()));
+                return;
+            }
+            ui->pushButton->setText("关闭串口");
             setEnPortEdit(false);
         } else {
             ser.close();
             setEnPortEdit(true);
+            ui->pushButton->setText("打开串口");
         }
     });
+    // 发送
     connect(ui->pushButton_2, &QPushButton::clicked, this, [this](bool isCheck){
+        if (!ser.isOpen()) {
+            QMessageBox::warning(this, "发送失败", QString("串口未连接"));
+            return;
+        }
+        std::string data;
+        
+        // ASCII
+        if (ui->radioButton->isChecked()) {
+            data = ui->textEdit->toPlainText().toStdString();
+        // HEX
+        } else if (ui->radioButton_2->isChecked()) {
+            QStringList hexStrList = ui->textEdit->toPlainText().split(" ");
+            QString originalString;
+            for (const QString &hex : hexStrList) {
+                bool ok;
+                char value = hex.toInt(&ok, 16);
+                if (!ok) {
+                    QMessageBox::warning(this, "发送失败", QString("发送数据有误"));
+                    return;
+                }
+                originalString.append(value);
+            }
+            data = originalString.toStdString();
+        } else {
+            data = ui->textEdit->toPlainText().toStdString();
+        }
         std::lock_guard<std::mutex> _lock(sendMutex);
-        sendMsg.append(ui->textEdit->toPlainText().toStdString());
+        sendMsg.append(data);
         ui->textBrowser->append(ui->textEdit->toPlainText());
+    });
+    // 清空
+    connect(ui->pushButton_3, &QPushButton::clicked, this, [this](bool isCheck){
+        ui->textBrowser->clear();
     });
 
 }
@@ -111,8 +150,30 @@ void App::update()
     if (receiveMsg.empty()) {
         return;
     }
-
-    ui->textBrowser->append(QString::fromStdString(receiveMsg));
+    // ASCII
+    if (ui->radioButton->isChecked()) {
+        ui->textBrowser->append(QString::fromStdString(receiveMsg));
+    // HEX
+    } else if (ui->radioButton_2->isChecked()) {
+        stringToHexStr(receiveMsg);
+    }
+    
     std::lock_guard<std::mutex> _lock(recMutex);
     receiveMsg.clear();
+}
+
+void App::stringToHexStr(std::string str)
+{
+    QString data = QString::fromStdString(str);
+    QByteArray array = data.toUtf8();
+    QString hexString = array.toHex();
+    QString spacedHexString;
+    for (int i = 0; i < hexString.size(); i += 2) {
+        spacedHexString.append(hexString.mid(i, 2));
+        if (i < hexString.size() - 2) {
+            spacedHexString.append(" ");
+        }
+    }
+
+    ui->textBrowser->append(spacedHexString);
 }

@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QVector>
 #include <QTimer>
+#include <QMessageBox>
 #include <vector>
 #include <thread>
 #include <mutex>
@@ -38,6 +39,7 @@ private:
     void writeSerial();
     void readSerial();
     void update();
+    void stringToHexStr(std::string str);
 
 };
 #endif // APP_H
