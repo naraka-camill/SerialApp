@@ -48,7 +48,7 @@ private:
     std::mutex clientsMutex;
     std::atomic<bool> running;
 
-    std::string recvMessage;
+    std::string _recvMessage;
     std::mutex recvMutex;
     std::queue<std::string> sendMsgQueue;
     std::mutex queueMutex;

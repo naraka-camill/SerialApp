@@ -45,13 +45,13 @@ bool TCPServer::start() {
     }
     
     // Set socket option to reuse address
-    int opt = 1;
-    if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, 
 #ifdef _WIN32
-                   (const char*)&opt, 
+    char opt = 1;
 #else
-                   &opt, 
+    int opt = 1;
 #endif
+    if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, 
+                   &opt, 
                    sizeof(opt)) == SOCKET_ERROR) {
         std::cerr << "Failed to set socket options" << std::endl;
         closesocket(serverSocket);
@@ -109,7 +109,12 @@ void TCPServer::stop() {
 void TCPServer::acceptConnections() {
     while (running) {
         sockaddr_in clientAddr;
+#ifdef _WIN32
         int clientAddrSize = sizeof(clientAddr);
+#else
+        socklen_t clientAddrSize = sizeof(clientAddr);
+#endif
+        
         
         SOCKET clientSocket = accept(serverSocket, (sockaddr*)&clientAddr, &clientAddrSize);
         if (clientSocket == INVALID_SOCKET) {
@@ -119,7 +124,7 @@ void TCPServer::acceptConnections() {
             continue;
         }
         
-        #ifdef _WIN32
+#ifdef _WIN32
         char* clientIP = inet_ntoa(clientAddr.sin_addr);
 #else
         char clientIP[INET_ADDRSTRLEN];
@@ -153,7 +158,7 @@ void TCPServer::handleClient(SOCKET clientSocket) {
         // broadcastMessage(message); // 接收到消息后回传相同消息
         {
             std::lock_guard<std::mutex> lock(recvMutex);
-            recvMessage.append(message);
+            _recvMessage.append(message);
         }
     }
     
@@ -206,14 +211,12 @@ void TCPServer::sndQueueMsg(const std::string &msg)
 
 void TCPServer::receiveMessages(std::string &message)
 {
-    if (recvMessage.empty()) {
+    if (_recvMessage.empty()) {
         return;
     }
-    {
-        std::lock_guard<std::mutex> lock(recvMutex);
-        message.append(recvMessage);
-        recvMessage.clear();
-    }
+    std::lock_guard<std::mutex> lock(recvMutex);
+    message.append(_recvMessage);
+    _recvMessage.clear();
 }
 
 
