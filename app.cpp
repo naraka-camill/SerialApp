@@ -57,16 +57,15 @@ App::App(QWidget *parent)
         }
     });
     // 发送
-    connect(ui->pushButton_2, &QPushButton::clicked, this, [this](bool isCheck){
+    connect(ui->pushButton_2, &QPushButton::clicked, this, [this](){
         if (!ser.isOpen()) {
             QMessageBox::warning(this, "发送失败", QString("串口未连接"));
             return;
         }
-        std::string data;
-        
+        std::string sendStr;
         // ASCII
         if (ui->radioButton->isChecked()) {
-            data = ui->textEdit->toPlainText().toStdString();
+            sendStr = ui->textEdit->toPlainText().toStdString();
         // HEX
         } else if (ui->radioButton_2->isChecked()) {
             QStringList hexStrList = ui->textEdit->toPlainText().split(" ");
@@ -80,16 +79,20 @@ App::App(QWidget *parent)
                 }
                 originalString.append(value);
             }
-            data = originalString.toStdString();
-        } else {
-            data = ui->textEdit->toPlainText().toStdString();
+            sendStr = originalString.toStdString();
         }
+
         std::lock_guard<std::mutex> _lock(sendMutex);
-        sendMsg.append(data);
-        ui->textBrowser->append(ui->textEdit->toPlainText());
+        sendMsg.append(sendStr);
+
+        QString displayStr = ui->textEdit->toPlainText();
+        QTime currentTime = QTime::currentTime();
+        QString curTimeStr = currentTime.toString("hh:mm:ss.zzz");
+        displayStr = curTimeStr + " 发送 >>\n" + displayStr;
+        ui->textBrowser->append(displayStr);
     });
     // 清空
-    connect(ui->pushButton_3, &QPushButton::clicked, this, [this](bool isCheck){
+    connect(ui->pushButton_3, &QPushButton::clicked, this, [this](){
         ui->textBrowser->clear();
     });
 
@@ -150,19 +153,27 @@ void App::update()
     if (receiveMsg.empty()) {
         return;
     }
+
+    QString displayStr;
     // ASCII
     if (ui->radioButton->isChecked()) {
-        ui->textBrowser->append(QString::fromStdString(receiveMsg));
+        displayStr = QString::fromStdString(receiveMsg);
     // HEX
     } else if (ui->radioButton_2->isChecked()) {
-        stringToHexStr(receiveMsg);
+        displayStr = stringToHexStr(receiveMsg);
     }
     
+    QTime currentTime = QTime::currentTime();
+    QString curTimeStr = currentTime.toString("hh:mm:ss.zzz");
+    displayStr = curTimeStr + " 接收 <<\n" + displayStr;
+
+    ui->textBrowser->append(displayStr);
+
     std::lock_guard<std::mutex> _lock(recMutex);
     receiveMsg.clear();
 }
 
-void App::stringToHexStr(std::string str)
+QString App::stringToHexStr(std::string str)
 {
     QString data = QString::fromStdString(str);
     QByteArray array = data.toUtf8();
@@ -175,5 +186,6 @@ void App::stringToHexStr(std::string str)
         }
     }
 
-    ui->textBrowser->append(spacedHexString);
+    
+    return spacedHexString;
 }

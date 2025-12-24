@@ -5,9 +5,12 @@
 #include <QVector>
 #include <QTimer>
 #include <QMessageBox>
+#include <QDateTime>
+
 #include <vector>
 #include <thread>
 #include <mutex>
+
 #include "3rdParty/serial/serial.h"
 
 QT_BEGIN_NAMESPACE
@@ -39,7 +42,7 @@ private:
     void writeSerial();
     void readSerial();
     void update();
-    void stringToHexStr(std::string str);
+    QString stringToHexStr(std::string str);
 
 };
 #endif // APP_H
