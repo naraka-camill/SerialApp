@@ -53,10 +53,12 @@ App::App(QWidget *parent)
             }
             ui->pushButton->setText("关闭串口");
             setEnPortEdit(false);
+            ui->textBrowser->append(QString("<span style='color: #cdcdcd;'>%1</span>").arg("串口已连接"));
         } else {
             ser.close();
             setEnPortEdit(true);
             ui->pushButton->setText("打开串口");
+            ui->textBrowser->append(QString("<span style='color: #cdcdcd;'>%1</span>").arg("串口关闭"));
         }
     });
     // 发送
