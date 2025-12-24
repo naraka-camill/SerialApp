@@ -13,6 +13,12 @@
 
 #include "3rdParty/serial/serial.h"
 
+
+#define THREAD_PERIOD_MS  (10)
+#define UI_PERIOD_MS      (20)
+#define SERIAL_TIMEOUT_MS (100)
+
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class App;

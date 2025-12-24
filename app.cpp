@@ -7,6 +7,9 @@ App::App(QWidget *parent)
 {
     ui->setupUi(this);
 
+    // 设置 QTextBrowser 支持 HTML 格式
+    ui->textBrowser->setHtml("");
+
     allPorts = serial::list_ports();
     for (auto &port : allPorts) {
         QString portName = QString::fromStdString(port.port + port.description);
@@ -24,9 +27,9 @@ App::App(QWidget *parent)
     _readThread.detach();
     QTimer *_time1 = new QTimer(this);
     connect(_time1, &QTimer::timeout, this, &App::update);
-    _time1->start(100);
+    _time1->start(UI_PERIOD_MS);
 
-    serial::Timeout timeout = serial::Timeout::simpleTimeout(100);
+    serial::Timeout timeout = serial::Timeout::simpleTimeout(SERIAL_TIMEOUT_MS);
     ser.setTimeout(timeout);
 
     // 连接/断开
@@ -88,8 +91,8 @@ App::App(QWidget *parent)
         QString displayStr = ui->textEdit->toPlainText();
         QTime currentTime = QTime::currentTime();
         QString curTimeStr = currentTime.toString("hh:mm:ss.zzz");
-        displayStr = curTimeStr + " 发送 >>\n" + displayStr;
-        ui->textBrowser->append(displayStr);
+        displayStr = curTimeStr + " 发送: <br>" + displayStr;
+        ui->textBrowser->append(QString("<span style='color: blue;'>%1</span>").arg(displayStr));
     });
     // 清空
     connect(ui->pushButton_3, &QPushButton::clicked, this, [this](){
@@ -115,7 +118,7 @@ void App::setEnPortEdit(bool isEn)
 void App::writeSerial()
 {
     while (true) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_PERIOD_MS));
         if (!ser.isOpen()) {
             continue;
         }
@@ -131,7 +134,7 @@ void App::writeSerial()
 void App::readSerial()
 {
     while (true) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_PERIOD_MS));
         if (!ser.isOpen()) {
             continue;
         }
@@ -165,9 +168,9 @@ void App::update()
     
     QTime currentTime = QTime::currentTime();
     QString curTimeStr = currentTime.toString("hh:mm:ss.zzz");
-    displayStr = curTimeStr + " 接收 <<\n" + displayStr;
+    displayStr = curTimeStr + " 接收: <br>" + displayStr;
 
-    ui->textBrowser->append(displayStr);
+    ui->textBrowser->append(QString("<span style='color: green;'>%1</span>").arg(displayStr));
 
     std::lock_guard<std::mutex> _lock(recMutex);
     receiveMsg.clear();

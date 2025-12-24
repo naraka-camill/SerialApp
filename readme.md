@@ -1,6 +1,6 @@
 # Serial 串口调试助手
 
-[![Version](https://img.shields.io/badge/version-v1.0.0-blue.svg)](https://gitee.com/wuhj2001/qt_serial)
+[![Version](https://img.shields.io/badge/version-v1.0.0-blue.svg)](https://gitee.com/wuhj2001/qt_serial/releases)
 [![License](https://img.shields.io/badge/license-AGPL%20v3-blue.svg)](LICENSE.txt)
 [![Qt Version](https://img.shields.io/badge/Qt-5.15.2-41CD52.svg)](https://www.qt.io/)
 [![C++](https://img.shields.io/badge/C%2B%2B-17-00599C.svg)](https://en.wikipedia.org/wiki/C%2B%2B17)
