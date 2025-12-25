@@ -18,9 +18,7 @@ App::App(QWidget *parent)
     QStringList strL = QStringList::fromVector(allPortsDesc);
     ui->comboBox->addItems(strL);
 
-    // connect(ui->comboBox, QOverload<int>::of(&QComboBox::activated), this, [=](int index){
-    //     ser.setPort(allPorts[index].port);
-    // });
+
     std::thread _writeThread(&App::writeSerial, this);
     std::thread _readThread(&App::readSerial, this);
     _writeThread.detach();
@@ -33,7 +31,7 @@ App::App(QWidget *parent)
     ser.setTimeout(timeout);
 
     // 连接/断开
-    connect(ui->pushButton, &QPushButton::clicked, this, [this](bool isCheck){
+    connect(ui->pushButton, &QPushButton::clicked, this, [this](bool isCheck) {
         if (isCheck) {
             int index = ui->comboBox->currentIndex();
             uint32_t baud = ui->comboBox_2->currentText().toUInt();
@@ -62,27 +60,37 @@ App::App(QWidget *parent)
         }
     });
     // 发送
-    connect(ui->pushButton_2, &QPushButton::clicked, this, [this](){
+    connect(ui->pushButton_2, &QPushButton::clicked, this, [this]() {
         if (!ser.isOpen()) {
             QMessageBox::warning(this, "发送失败", QString("串口未连接"));
             return;
         }
+
         std::string sendStr;
+        QString displayStr;
         // ASCII
         if (ui->radioButton->isChecked()) {
             sendStr = ui->textEdit->toPlainText().toStdString();
+            displayStr ="[ASC]: " + ui->textEdit->toPlainText();
         // HEX
         } else if (ui->radioButton_2->isChecked()) {
             QStringList hexStrList = ui->textEdit->toPlainText().split(" ");
             QString originalString;
+            displayStr = "[HEX]:";
             for (const QString &hex : hexStrList) {
-                bool ok;
-                char value = hex.toInt(&ok, 16);
+                bool ok = false;
+                uchar value = hex.toUShort(&ok, 16);
+                if (hex.isEmpty()) {
+                    continue;
+                } else if (hex.size() > 2) {
+                    ok = false;
+                }
                 if (!ok) {
-                    QMessageBox::warning(this, "发送失败", QString("发送数据有误"));
+                    QMessageBox::warning(this, "发送失败", QString("发送数据有误\n[%1]无法解析为HEX").arg(hex));
                     return;
                 }
                 originalString.append(value);
+                displayStr += QString(" %1").arg(static_cast<int>(value), 2, 16, QChar('0')).toUpper();  // "01"
             }
             sendStr = originalString.toStdString();
         }
@@ -90,15 +98,50 @@ App::App(QWidget *parent)
         std::lock_guard<std::mutex> _lock(sendMutex);
         sendMsg.append(sendStr);
 
-        QString displayStr = ui->textEdit->toPlainText();
         QTime currentTime = QTime::currentTime();
         QString curTimeStr = currentTime.toString("hh:mm:ss.zzz");
         displayStr = curTimeStr + " 发送: <br>" + displayStr;
         ui->textBrowser->append(QString("<span style='color: blue;'>%1</span>").arg(displayStr));
     });
     // 清空
-    connect(ui->pushButton_3, &QPushButton::clicked, this, [this](){
+    connect(ui->pushButton_3, &QPushButton::clicked, this, [this]() {
         ui->textBrowser->clear();
+    });
+
+    connect(ui->textEdit, &QTextEdit::textChanged, this, [this]() {
+        if (!ui->radioButton_2->isChecked()) {
+            return;
+        }
+        QString text = ui->textEdit->toPlainText();
+        QTextCursor cursor = ui->textEdit->textCursor();
+        // HEX文本检测和格式化
+        QString fText;
+        QString errChar;
+        char cIdx = 0;
+        for (auto &c : text) {
+            if (c == ' ') {
+                continue;
+            }
+            if ((c < '0' || c > '9') &&
+                (c < 'A' || c > 'F') &&
+                (c < 'a' || c > 'f')) {
+                errChar += c;
+                QToolTip::showText(QCursor::pos(), QString("<span style='color: red;'>%1</span>").arg("[HEX]模式下，只能输入十六进制文本（错误的输入：%1）").arg(errChar), this, QRect());
+                continue;
+            }
+
+            if (cIdx == 2) {
+                fText += ' ';
+                cIdx = 0;
+            }
+            fText += c.toUpper();
+            cIdx += 1;
+        }
+        ui->textEdit->blockSignals(true);
+        ui->textEdit->setText(fText);
+        ui->textEdit->blockSignals(false);
+        cursor.movePosition(QTextCursor::End);
+        ui->textEdit->setTextCursor(cursor);
     });
 
 }
@@ -162,10 +205,10 @@ void App::update()
     QString displayStr;
     // ASCII
     if (ui->radioButton->isChecked()) {
-        displayStr = QString::fromStdString(receiveMsg);
+        displayStr = "[ASC]: "  + QString::fromStdString(receiveMsg);
     // HEX
     } else if (ui->radioButton_2->isChecked()) {
-        displayStr = stringToHexStr(receiveMsg);
+        displayStr = "[HEX]: "  + stringToHexStr(receiveMsg);
     }
     
     QTime currentTime = QTime::currentTime();
@@ -192,5 +235,5 @@ QString App::stringToHexStr(std::string str)
     }
 
     
-    return spacedHexString;
+    return spacedHexString.toUpper();
 }

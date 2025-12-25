@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>串口调试助手@wuhj @v1.0.0</string>
+   <string>串口调试助手@wuhj @v1.1.0</string>
   </property>
   <layout class="QGridLayout" name="gridLayout_3">
    <item row="0" column="0">
@@ -87,6 +87,12 @@
        </item>
        <item row="1" column="1">
         <widget class="QComboBox" name="comboBox_2">
+         <property name="toolTip">
+          <string>除选项外，可自定义输入波特率</string>
+         </property>
+         <property name="autoFillBackground">
+          <bool>false</bool>
+         </property>
          <property name="editable">
           <bool>true</bool>
          </property>
@@ -161,8 +167,23 @@
            <height>16777215</height>
           </size>
          </property>
+         <property name="toolTip">
+          <string>选择已扫描到的串口</string>
+         </property>
+         <property name="statusTip">
+          <string/>
+         </property>
+         <property name="whatsThis">
+          <string/>
+         </property>
+         <property name="styleSheet">
+          <string notr="true"/>
+         </property>
          <property name="editable">
           <bool>false</bool>
+         </property>
+         <property name="sizeAdjustPolicy">
+          <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
          </property>
         </widget>
        </item>
@@ -322,6 +343,9 @@
           <font>
            <bold>false</bold>
           </font>
+         </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;ASCII：直接输入字符串即可，例如 hello world&lt;/p&gt;&lt;p&gt;HEX：每个字节之间至少间隔一个空格，例如 5a ff 6E 3D c 2 B&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
        </item>

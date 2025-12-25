@@ -6,6 +6,8 @@
 #include <QTimer>
 #include <QMessageBox>
 #include <QDateTime>
+#include <QEvent>
+#include <QToolTip>
 
 #include <vector>
 #include <thread>
