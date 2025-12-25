@@ -14,11 +14,25 @@
 #include <mutex>
 
 #include "3rdParty/serial/serial.h"
+#include "3rdParty/nlohmann/json.hpp"
 
 
 #define THREAD_PERIOD_MS  (10)
 #define UI_PERIOD_MS      (20)
 #define SERIAL_TIMEOUT_MS (100)
+
+
+struct AppCfg
+{
+    int serPortIdx;
+    int baud;
+    int bytesize;
+    int stopIdx;
+    int parityIdx;
+    bool isASCII;
+    
+};
+
 
 
 QT_BEGIN_NAMESPACE
@@ -46,10 +60,18 @@ private:
     std::mutex sendMutex;
     std::string sendMsg;
 
+    AppCfg appCfg;
+
+    void initUI();
+    void initTimer();
+    void initThread();
+    void scanPort();
+    void update();
+    void connectSignal();
+
     void setEnPortEdit(bool isEn);
     void writeSerial();
     void readSerial();
-    void update();
     QString stringToHexStr(std::string str);
 
 };

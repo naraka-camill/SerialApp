@@ -229,12 +229,12 @@
          </item>
          <item>
           <property name="text">
-           <string>1.5</string>
+           <string>2</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>2</string>
+           <string>1.5</string>
           </property>
          </item>
         </widget>

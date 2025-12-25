@@ -1,43 +1,31 @@
 #include "app.h"
 #include "ui_app.h"
 
+using nlohmann::json;
+
 App::App(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::App)
 {
     ui->setupUi(this);
 
-    // 设置 QTextBrowser 支持 HTML 格式
-    ui->textBrowser->setHtml("");
+    initUI();
+    scanPort();
+    initThread();
+    initTimer();
+    connectSignal();
+}
 
-    allPorts = serial::list_ports();
-    for (auto &port : allPorts) {
-        QString portName = QString::fromStdString(port.port + port.description);
-        allPortsDesc.push_back(portName);
-    }
-    QStringList strL = QStringList::fromVector(allPortsDesc);
-    ui->comboBox->addItems(strL);
-
-
-    std::thread _writeThread(&App::writeSerial, this);
-    std::thread _readThread(&App::readSerial, this);
-    _writeThread.detach();
-    _readThread.detach();
-    QTimer *_time1 = new QTimer(this);
-    connect(_time1, &QTimer::timeout, this, &App::update);
-    _time1->start(UI_PERIOD_MS);
-
-    serial::Timeout timeout = serial::Timeout::simpleTimeout(SERIAL_TIMEOUT_MS);
-    ser.setTimeout(timeout);
-
-    // 连接/断开
+void App::connectSignal()
+{
+        // 连接/断开
     connect(ui->pushButton, &QPushButton::clicked, this, [this](bool isCheck) {
         if (isCheck) {
             int index = ui->comboBox->currentIndex();
             uint32_t baud = ui->comboBox_2->currentText().toUInt();
             serial::bytesize_t bytesize = (serial::bytesize_t)ui->comboBox_3->currentText().toInt();
             serial::stopbits_t stopbits = (serial::stopbits_t)ui->comboBox_4->currentText().toInt();
-            serial::parity_t parity = (serial::parity_t)ui->comboBox_4->currentIndex();
+            serial::parity_t parity = (serial::parity_t)ui->comboBox_5->currentIndex();
             ser.setPort(allPorts[index].port);
             ser.setBaudrate(baud);
             ser.setBytesize(bytesize);
@@ -143,7 +131,42 @@ App::App(QWidget *parent)
         cursor.movePosition(QTextCursor::End);
         ui->textEdit->setTextCursor(cursor);
     });
+}
 
+void App::initTimer()
+{
+    QTimer *_time1 = new QTimer(this);
+    connect(_time1, &QTimer::timeout, this, &App::update);
+    _time1->start(UI_PERIOD_MS);
+
+    serial::Timeout timeout = serial::Timeout::simpleTimeout(SERIAL_TIMEOUT_MS);
+    ser.setTimeout(timeout);
+}
+
+void App::initThread()
+{
+    std::thread _writeThread(&App::writeSerial, this);
+    std::thread _readThread(&App::readSerial, this);
+    _writeThread.detach();
+    _readThread.detach();
+}
+
+void App::scanPort()
+{
+    allPorts = serial::list_ports();
+    for (auto &port : allPorts) {
+        QString portName = QString::fromStdString(port.port + port.description);
+        allPortsDesc.push_back(portName);
+    }
+    QStringList strL = QStringList::fromVector(allPortsDesc);
+    ui->comboBox->clear();
+    ui->comboBox->addItems(strL);
+}
+
+void App::initUI()
+{
+    // 设置 QTextBrowser 支持 HTML 格式
+    ui->textBrowser->setHtml("");
 }
 
 App::~App()
@@ -221,6 +244,7 @@ void App::update()
     receiveMsg.clear();
 }
 
+
 QString App::stringToHexStr(std::string str)
 {
     QString data = QString::fromStdString(str);
@@ -234,6 +258,5 @@ QString App::stringToHexStr(std::string str)
         }
     }
 
-    
     return spacedHexString.toUpper();
 }
