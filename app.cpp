@@ -3,14 +3,47 @@
 
 using nlohmann::json;
 
+void to_json(json &j, const AppCfg cfg)
+{
+    j["serPortIdx"]  = cfg.serPortIdx;
+    j["baud"]        = cfg.baud;
+    j["bytesize"]    = cfg.bytesizeIdx;
+    j["stopIdx"]     = cfg.stopIdx;
+    j["parityIdx"]   = cfg.parityIdx;
+    j["isASCII"]     = cfg.isASCII;
+
+    qInfo("To Json is OK");
+}
+
+void from_json(const json &j, AppCfg &cfg)
+{
+
+    if (j.contains("serPortIdx"))
+        j.at("serPortIdx").get_to(cfg.serPortIdx);
+    if (j.contains("baud"))
+        j.at("baud").get_to(cfg.baud);
+    if (j.contains("bytesize"))
+        j.at("bytesize").get_to(cfg.bytesizeIdx);
+    if (j.contains("stopIdx"))
+        j.at("stopIdx").get_to(cfg.stopIdx);
+    if (j.contains("parityIdx"))
+        j.at("parityIdx").get_to(cfg.parityIdx);
+    if (j.contains("isASCII"))
+        j.at("isASCII").get_to(cfg.isASCII);
+
+    qInfo("From Json is OK");
+
+}
+
 App::App(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::App)
 {
     ui->setupUi(this);
 
-    initUI();
     scanPort();
+    initAppCfg();
+    initUI();
     initThread();
     initTimer();
     connectSignal();
@@ -167,6 +200,13 @@ void App::initUI()
 {
     // 设置 QTextBrowser 支持 HTML 格式
     ui->textBrowser->setHtml("");
+
+    ui->comboBox->setCurrentIndex(appCfg.serPortIdx);
+    ui->comboBox_2->setCurrentText(QString::number(appCfg.baud));
+    ui->comboBox_3->setCurrentIndex(appCfg.bytesizeIdx);
+    ui->comboBox_4->setCurrentIndex(appCfg.stopIdx);
+    ui->comboBox_5->setCurrentIndex(appCfg.parityIdx);
+    ui->radioButton->setChecked(appCfg.isASCII);
 }
 
 App::~App()
@@ -213,6 +253,12 @@ void App::readSerial()
 
 void App::update()
 {
+    updateUI();
+    autosave();
+}
+
+void App::updateUI()
+{
     static bool isSerOpen = false;
     if (ser.isOpen() && !isSerOpen) {
         isSerOpen = true;
@@ -228,12 +274,12 @@ void App::update()
     QString displayStr;
     // ASCII
     if (ui->radioButton->isChecked()) {
-        displayStr = "[ASC]: "  + QString::fromStdString(receiveMsg);
-    // HEX
+        displayStr = "[ASC]: " + QString::fromStdString(receiveMsg);
+        // HEX
     } else if (ui->radioButton_2->isChecked()) {
-        displayStr = "[HEX]: "  + stringToHexStr(receiveMsg);
+        displayStr = "[HEX]: " + stringToHexStr(receiveMsg);
     }
-    
+
     QTime currentTime = QTime::currentTime();
     QString curTimeStr = currentTime.toString("hh:mm:ss.zzz");
     displayStr = curTimeStr + " 接收: <br>" + displayStr;
@@ -243,7 +289,6 @@ void App::update()
     std::lock_guard<std::mutex> _lock(recMutex);
     receiveMsg.clear();
 }
-
 
 QString App::stringToHexStr(std::string str)
 {
@@ -259,4 +304,60 @@ QString App::stringToHexStr(std::string str)
     }
 
     return spacedHexString.toUpper();
+}
+
+void App::initAppCfg()
+{
+    std::ifstream ifile(CONFIG_PATH);
+    if (!ifile.is_open()) {
+        autosave(true);
+        return;
+    }
+    json j;
+    try {
+        j = json::parse(ifile);
+    } catch(const nlohmann::json::exception& e) {
+        QMessageBox::critical(this, "配置文件出错",QString("配置文件可能被外部修改出错, 已恢复默认配置\n(错误代码：%1)").arg(e.what()));
+        autosave(true);
+    }
+    ifile.close();
+
+    if (!j.is_null()) {
+        appCfg = j;
+    }
+}
+
+void App::autosave(bool isForce)
+{
+    static int cnt = 0;
+    static AppCfg _prev = appCfg;
+    
+    if (isForce) {
+        goto FORCE_SAVE;
+    }
+
+    if (++cnt <= AUTO_SAVE_PERIOD_MS_CNT) {
+        return;
+    }
+
+FORCE_SAVE:
+    cnt = 0;
+    appCfg.serPortIdx = ui->comboBox->currentIndex();
+    appCfg.baud = ui->comboBox_2->currentText().toInt();
+    appCfg.bytesizeIdx = ui->comboBox_3->currentIndex();
+    appCfg.stopIdx = ui->comboBox_4->currentIndex();
+    appCfg.parityIdx = ui->comboBox_5->currentIndex();
+    appCfg.isASCII = ui->radioButton->isChecked();
+
+    if (_prev == appCfg) {
+        return;
+    }
+    _prev = appCfg;
+
+    json j = appCfg;
+    std::ofstream ofile(CONFIG_PATH);
+    if (ofile.is_open()) {
+        ofile  << j/*.dump(4)*/ << std::endl;  
+        ofile.close();
+    }
 }
