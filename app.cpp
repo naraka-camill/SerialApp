@@ -96,11 +96,10 @@ void App::connectSignal()
         // HEX
         } else if (ui->radioButton_2->isChecked()) {
             QStringList hexStrList = ui->textEdit->toPlainText().split(" ");
-            QString originalString;
             displayStr = "[HEX]:";
             for (const QString &hex : hexStrList) {
                 bool ok = false;
-                uchar value = hex.toUShort(&ok, 16);
+                uchar value = hex.toUInt(&ok, 16) & 0xFF;
                 if (hex.isEmpty()) {
                     continue;
                 } else if (hex.size() > 2) {
@@ -110,10 +109,9 @@ void App::connectSignal()
                     QMessageBox::warning(this, "发送失败", QString("发送数据有误\n[%1]无法解析为HEX").arg(hex));
                     return;
                 }
-                originalString.append(value);
-                displayStr += QString(" %1").arg(static_cast<int>(value), 2, 16, QChar('0')).toUpper();  // "01"
+                sendStr += value;
+                displayStr += QString(" %1").arg(value, 2, 16, QChar('0')).toUpper();  // "01"
             }
-            sendStr = originalString.toStdString();
         }
 
         std::lock_guard<std::mutex> _lock(sendMutex);
@@ -207,6 +205,7 @@ void App::initUI()
     ui->comboBox_4->setCurrentIndex(appCfg.stopIdx);
     ui->comboBox_5->setCurrentIndex(appCfg.parityIdx);
     ui->radioButton->setChecked(appCfg.isASCII);
+    ui->radioButton_2->setChecked(!appCfg.isASCII);
 }
 
 App::~App()
