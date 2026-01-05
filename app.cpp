@@ -5,7 +5,7 @@ using nlohmann::json;
 
 void to_json(json &j, const AppCfg cfg)
 {
-    j["serPortIdx"]  = cfg.serPortIdx;
+    j["serPort"]     = cfg.serPort;
     j["baud"]        = cfg.baud;
     j["bytesize"]    = cfg.bytesizeIdx;
     j["stopIdx"]     = cfg.stopIdx;
@@ -18,8 +18,8 @@ void to_json(json &j, const AppCfg cfg)
 void from_json(const json &j, AppCfg &cfg)
 {
 
-    if (j.contains("serPortIdx"))
-        j.at("serPortIdx").get_to(cfg.serPortIdx);
+    if (j.contains("serPort"))
+        j.at("serPort").get_to(cfg.serPort);
     if (j.contains("baud"))
         j.at("baud").get_to(cfg.baud);
     if (j.contains("bytesize"))
@@ -54,12 +54,12 @@ void App::connectSignal()
         // 连接/断开
     connect(ui->pushButton, &QPushButton::clicked, this, [this](bool isCheck) {
         if (isCheck) {
-            int index = ui->comboBox->currentIndex();
+            std::string port = ui->comboBox->currentText().toStdString();
             uint32_t baud = ui->comboBox_2->currentText().toUInt();
             serial::bytesize_t bytesize = (serial::bytesize_t)ui->comboBox_3->currentText().toInt();
             serial::stopbits_t stopbits = (serial::stopbits_t)ui->comboBox_4->currentText().toInt();
             serial::parity_t parity = (serial::parity_t)ui->comboBox_5->currentIndex();
-            ser.setPort(allPorts[index].port);
+            ser.setPort(port);
             ser.setBaudrate(baud);
             ser.setBytesize(bytesize);
             ser.setStopbits(stopbits);
@@ -67,7 +67,11 @@ void App::connectSignal()
             try {
                 ser.open();
             } catch(const serial::IOException &e) {
+                ui->pushButton->setChecked(false);
                 QMessageBox::warning(this, "串口连接出错", QString("串口可能被占用, 错误代码:\n%1").arg(e.what()));
+                return;
+            }
+            if (!ser.isOpen()) {
                 return;
             }
             ui->pushButton->setText("关闭串口");
@@ -201,7 +205,7 @@ void App::initUI()
     // 设置 QTextBrowser 支持 HTML 格式
     ui->textBrowser->setHtml("");
 
-    ui->comboBox->setCurrentIndex(appCfg.serPortIdx);
+    ui->comboBox->setCurrentText(QString::fromStdString(appCfg.serPort));
     ui->comboBox_2->setCurrentText(QString::number(appCfg.baud));
     ui->comboBox_3->setCurrentIndex(appCfg.bytesizeIdx);
     ui->comboBox_4->setCurrentIndex(appCfg.stopIdx);
@@ -342,7 +346,7 @@ void App::autosave(bool isForce)
 
 FORCE_SAVE:
     cnt = 0;
-    appCfg.serPortIdx = ui->comboBox->currentIndex();
+    appCfg.serPort = ui->comboBox->currentText().toStdString();
     appCfg.baud = ui->comboBox_2->currentText().toInt();
     appCfg.bytesizeIdx = ui->comboBox_3->currentIndex();
     appCfg.stopIdx = ui->comboBox_4->currentIndex();

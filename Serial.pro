@@ -37,6 +37,7 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-LIBS += -lsetupapi
-
+win32 {
+    LIBS += -lsetupapi
+}
 RC_FILE = windows_icon.rc

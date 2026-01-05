@@ -28,7 +28,7 @@
 
 struct AppCfg
 {
-    int serPortIdx = 0;
+    std::string serPort = "";
     int baud = 19200;
     int bytesizeIdx = 0;
     int stopIdx = 0;
@@ -37,7 +37,7 @@ struct AppCfg
     
     bool operator==(const AppCfg &other) {
         return (
-            this->serPortIdx == other.serPortIdx &&
+            this->serPort == other.serPort &&
             this->baud == other.baud &&
             this->bytesizeIdx == other.bytesizeIdx &&
             this->stopIdx == other.stopIdx &&
