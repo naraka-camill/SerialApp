@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Serial 串口调试助手
+Name[en]=Serial Debug Assistant
+Comment=基于 Qt 的跨平台串口通信调试工具
+Comment[en]=Cross-platform serial port debugging tool based on Qt
+Exec=/usr/bin/Serial
+Icon=serial-qt
+Terminal=false
+Categories=Development;Utility;Electronics;
+Keywords=serial;port;debug;uart;rs232;communication;

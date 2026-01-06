@@ -1,0 +1,17 @@
+Package: serial-qt
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: wuhj2001 <wuhj2001@gitee.com>
+Depends: libqt5widgets5, libqt5gui5, libqt5core5a, libstdc++6
+Description: Serial Port Debug Assistant
+ Serial 串口调试助手是一个基于 Qt 5.15.2 开发的跨平台串口通信调试工具，
+ 提供图形化界面用于串口设备的数据收发和调试。
+ .
+ 主要特性：
+  - 智能串口管理：自动检测系统可用串口设备
+  - 完整参数配置：支持波特率、数据位、停止位、校验位配置
+  - 多线程通信：读写操作在独立线程中执行，确保界面流畅
+  - 实时数据显示：支持ASCII和HEX格式数据收发
+  - 跨平台支持：兼容 Windows、Linux 和 macOS 系统
