@@ -54,6 +54,13 @@ void App::connectSignal()
         // 连接/断开
     connect(ui->pushButton, &QPushButton::clicked, this, [this](bool isCheck) {
         if (isCheck) {
+            // 检查串口配置是否有效（是否为空）
+            if (ui->comboBox->currentText().isEmpty()) {
+                QMessageBox::warning(this, "串口打开失败", QString("串口号为空！请填入串口号再试"));
+                return;
+            }
+            
+            
             std::string port = ui->comboBox->currentText().toStdString();
             uint32_t baud = ui->comboBox_2->currentText().toUInt();
             serial::bytesize_t bytesize = (serial::bytesize_t)ui->comboBox_3->currentText().toInt();
