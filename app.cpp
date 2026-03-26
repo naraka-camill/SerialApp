@@ -54,6 +54,7 @@ void App::connectSignal()
         // 连接/断开
     connect(ui->pushButton, &QPushButton::clicked, this, [this](bool isCheck) {
         if (isCheck) {
+            ui->pushButton->setChecked(false);
             // 检查串口配置是否有效（是否为空）
             if (ui->comboBox->currentText().isEmpty()) {
                 QMessageBox::warning(this, "串口打开失败", QString("串口号为空！请填入串口号再试"));
@@ -84,11 +85,14 @@ void App::connectSignal()
             ui->pushButton->setText("关闭串口");
             setEnPortEdit(false);
             ui->textBrowser->append(QString("<span style='color: #cdcdcd;'>%1</span>").arg("串口已连接"));
+            ui->pushButton->setChecked(true);
         } else {
+            ui->pushButton->setChecked(true);
             ser.close();
             setEnPortEdit(true);
             ui->pushButton->setText("打开串口");
             ui->textBrowser->append(QString("<span style='color: #cdcdcd;'>%1</span>").arg("串口关闭"));
+            ui->pushButton->setChecked(false);
         }
     });
     // 发送
@@ -237,11 +241,12 @@ void App::setEnPortEdit(bool isEn)
 void App::writeSerial()
 {
     while (true) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_PERIOD_MS));
         if (!ser.isOpen()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_PERIOD_MS));
             continue;
         }
         if (sendMsg.empty()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_PERIOD_MS));
             continue;
         }
         std::lock_guard<std::mutex> _lock(sendMutex);
@@ -253,12 +258,16 @@ void App::writeSerial()
 void App::readSerial()
 {
     while (true) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_PERIOD_MS));
         if (!ser.isOpen()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_PERIOD_MS));
+            continue;
+        }
+        std::string _recvStr = ser.read(200);
+        if (_recvStr.empty()) {
             continue;
         }
         std::lock_guard<std::mutex> _lock(recMutex);
-        receiveMsg.append(ser.read(1024));
+        receiveMsg.append(_recvStr);
     }
 }
 
@@ -338,6 +347,8 @@ void App::initAppCfg()
     }
 }
 
+/// @brief 当配置被修改后，自动保存
+/// @param isForce 强制保存（缺省默认为false）
 void App::autosave(bool isForce)
 {
     static int cnt = 0;
