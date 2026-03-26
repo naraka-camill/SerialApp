@@ -73,6 +73,7 @@ private:
     std::vector<serial::PortInfo> allPorts;
     QVector<QString> allPortsDesc;
     
+    std::mutex serMutex;
     std::mutex recMutex;
     std::string receiveMsg;
     std::mutex sendMutex;

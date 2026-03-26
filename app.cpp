@@ -96,6 +96,7 @@ void App::connectSignal()
             ui->pushButton->setChecked(true);
 
             if (ser.isOpen()) {
+                std::lock_guard<std::mutex> _lock(serMutex);
                 ser.close();
             }
             
@@ -267,16 +268,22 @@ void App::writeSerial()
 void App::readSerial()
 {
     while (true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_PERIOD_MS));
         if (!ser.isOpen()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(THREAD_PERIOD_MS));
             continue;
         }
-        std::string _recvStr = ser.read(200);
-        if (_recvStr.empty()) {
+        std::string _recvStr;
+        {
+            std::lock_guard<std::mutex> _lock(serMutex);
+            _recvStr = ser.read(200);
+        }
+            if (_recvStr.empty()) {
             continue;
         }
-        std::lock_guard<std::mutex> _lock(recMutex);
-        receiveMsg.append(_recvStr);
+        {
+            std::lock_guard<std::mutex> _lock(recMutex);
+            receiveMsg.append(_recvStr);
+        }
     }
 }
 
