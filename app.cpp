@@ -61,17 +61,24 @@ void App::connectSignal()
                 return;
             }
             
+            if (ser.isOpen()) {
+                qInfo("Serial already open");
+                return;
+            }
             
-            std::string port = ui->comboBox->currentText().toStdString();
+            int index = ui->comboBox->currentIndex();
             uint32_t baud = ui->comboBox_2->currentText().toUInt();
             serial::bytesize_t bytesize = (serial::bytesize_t)ui->comboBox_3->currentText().toInt();
             serial::stopbits_t stopbits = (serial::stopbits_t)ui->comboBox_4->currentText().toInt();
             serial::parity_t parity = (serial::parity_t)ui->comboBox_5->currentIndex();
-            ser.setPort(port);
+            serial::Timeout timeout = serial::Timeout::simpleTimeout(SERIAL_TIMEOUT_MS);
+            ser.setPort(allPorts[index].port);
             ser.setBaudrate(baud);
             ser.setBytesize(bytesize);
             ser.setStopbits(stopbits);
             ser.setParity(parity);
+            ser.setTimeout(timeout);
+
             try {
                 ser.open();
             } catch(const serial::IOException &e) {
@@ -79,17 +86,21 @@ void App::connectSignal()
                 QMessageBox::warning(this, "串口连接出错", QString("串口可能被占用, 错误代码:\n%1").arg(e.what()));
                 return;
             }
-            if (!ser.isOpen()) {
-                return;
-            }
+
+            qInfo("Serial open");
             ui->pushButton->setText("关闭串口");
             setEnPortEdit(false);
             ui->textBrowser->append(QString("<span style='color: #cdcdcd;'>%1</span>").arg("串口已连接"));
             ui->pushButton->setChecked(true);
         } else {
             ui->pushButton->setChecked(true);
-            ser.close();
+
+            if (ser.isOpen()) {
+                ser.close();
+            }
+            
             setEnPortEdit(true);
+            qInfo("Serial close");
             ui->pushButton->setText("打开串口");
             ui->textBrowser->append(QString("<span style='color: #cdcdcd;'>%1</span>").arg("串口关闭"));
             ui->pushButton->setChecked(false);
@@ -186,9 +197,6 @@ void App::initTimer()
     QTimer *_time1 = new QTimer(this);
     connect(_time1, &QTimer::timeout, this, &App::update);
     _time1->start(UI_PERIOD_MS);
-
-    serial::Timeout timeout = serial::Timeout::simpleTimeout(SERIAL_TIMEOUT_MS);
-    ser.setTimeout(timeout);
 }
 
 void App::initThread()
@@ -226,6 +234,7 @@ void App::initUI()
 
 App::~App()
 {
+    qInfo("Delete Serial App");
     delete ui;
 }
 
@@ -279,14 +288,6 @@ void App::update()
 
 void App::updateUI()
 {
-    static bool isSerOpen = false;
-    if (ser.isOpen() && !isSerOpen) {
-        isSerOpen = true;
-        qInfo("Serial open");
-    } else if (!ser.isOpen() && isSerOpen) {
-        isSerOpen = false;
-        qInfo("Serial close");
-    }
     if (receiveMsg.empty()) {
         return;
     }
