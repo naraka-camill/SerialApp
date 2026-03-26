@@ -157,20 +157,23 @@ void App::connectSignal()
     });
 
     connect(ui->textEdit, &QTextEdit::textChanged, this, [this]() {
+        QString text = ui->textEdit->toPlainText();
+        if (!text.isEmpty() && text.back().cell() == '\n') {
+            ui->pushButton_2->click();
+        }
         if (!ui->radioButton_2->isChecked()) {
             return;
         }
-        QString text = ui->textEdit->toPlainText();
         QTextCursor cursor = ui->textEdit->textCursor();
         // HEX文本检测和格式化
         QString fText;
         QString errChar;
         char cIdx = 0;
         for (auto &c : text) {
+
             if (c == ' ') {
                 continue;
-            }
-            if ((c < '0' || c > '9') &&
+            } else if ((c < '0' || c > '9') &&
                 (c < 'A' || c > 'F') &&
                 (c < 'a' || c > 'f')) {
                 errChar += c;
@@ -212,7 +215,7 @@ void App::scanPort()
 {
     allPorts = serial::list_ports();
     for (auto &port : allPorts) {
-        QString portName = QString::fromStdString(port.port + port.description);
+        QString portName = QString::fromStdString(port.port);
         allPortsDesc.push_back(portName);
     }
     QStringList strL = QStringList::fromVector(allPortsDesc);

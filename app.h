@@ -20,7 +20,7 @@
 
 
 #define THREAD_PERIOD_MS     (20)
-#define UI_PERIOD_MS         (100)
+#define UI_PERIOD_MS         (20)
 #define SERIAL_TIMEOUT_MS    (20)
 #define AUTO_SAVE_PERIOD_MS_CNT  (1000 / UI_PERIOD_MS)  // 1s
 #define CONFIG_PATH (".cfg")
