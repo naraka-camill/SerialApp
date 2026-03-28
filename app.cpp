@@ -43,6 +43,7 @@ App::App(QWidget *parent)
 
     scanPort();
     initAppCfg();
+    loadShortcuts();
     initUI();
     initThread();
     initTimer();
@@ -194,6 +195,9 @@ void App::connectSignal()
         cursor.movePosition(QTextCursor::End);
         ui->textEdit->setTextCursor(cursor);
     });
+
+    // 快捷指令按钮
+    connect(ui->pushButton_shortcuts, &QPushButton::clicked, this, &App::on_pushButton_shortcuts_clicked);
 }
 
 void App::initTimer()
@@ -393,4 +397,136 @@ FORCE_SAVE:
         ofile  << j/*.dump(4)*/ << std::endl;  
         ofile.close();
     }
+}
+
+void App::on_pushButton_shortcuts_clicked()
+{
+    ShortcutsDialog dialog(this);
+    dialog.setShortcuts(shortcuts);
+    if (dialog.exec() == QDialog::Accepted) {
+        shortcuts = dialog.getShortcuts();
+        saveShortcuts();
+        createShortcutButtons();
+    }
+}
+
+void App::loadShortcuts()
+{
+    std::ifstream ifile(SHORTCUTS_PATH);
+    if (!ifile.is_open()) {
+        return;
+    }
+
+    json j;
+    try {
+        j = json::parse(ifile);
+    } catch(const nlohmann::json::exception& e) {
+        qInfo("Failed to parse shortcuts file: %s", e.what());
+        ifile.close();
+        return;
+    }
+    ifile.close();
+
+    shortcuts.clear();
+    if (j.is_array()) {
+        for (const auto& item : j) {
+            ShortcutCommand cmd;
+            if (item.contains("name")) cmd.name = QString::fromStdString(item["name"]);
+            if (item.contains("type")) cmd.type = QString::fromStdString(item["type"]);
+            if (item.contains("data")) cmd.data = QString::fromStdString(item["data"]);
+            shortcuts.append(cmd);
+        }
+    }
+}
+
+void App::saveShortcuts()
+{
+    json j = json::array();
+    for (const auto& cmd : shortcuts) {
+        json item;
+        item["name"] = cmd.name.toStdString();
+        item["type"] = cmd.type.toStdString();
+        item["data"] = cmd.data.toStdString();
+        j.push_back(item);
+    }
+
+    std::ofstream ofile(SHORTCUTS_PATH);
+    if (ofile.is_open()) {
+        ofile << j.dump(4) << std::endl;
+        ofile.close();
+    }
+}
+
+void App::sendShortcutCommand(const ShortcutCommand &cmd)
+{
+    if (!ser.isOpen()) {
+        QMessageBox::warning(this, "发送失败", QString("串口未连接"));
+        return;
+    }
+
+    std::string sendStr;
+    QString displayStr;
+    // ASCII
+    if (cmd.type == "ASCII") {
+        sendStr = cmd.data.toStdString();
+        displayStr = "[ASC]: " + cmd.data;
+    // HEX
+    } else if (cmd.type == "HEX") {
+        QStringList hexStrList = cmd.data.split(" ");
+        QString originalString;
+        displayStr = "[HEX]";
+        for (const QString &hex : hexStrList) {
+            bool ok = false;
+            uchar value = hex.toUShort(&ok, 16);
+            if (hex.isEmpty()) {
+                continue;
+            } else if (hex.size() > 2) {
+                ok = false;
+            }
+            if (!ok) {
+                QMessageBox::warning(this, "发送失败", QString("发送数据有误\n[%1]无法解析为HEX").arg(hex));
+                return;
+            }
+            originalString.append(value);
+            displayStr += QString(" %1").arg(static_cast<int>(value), 2, 16, QChar('0')).toUpper();
+        }
+        sendStr = originalString.toStdString();
+    }
+
+    std::lock_guard<std::mutex> _lock(sendMutex);
+    sendMsg.append(sendStr);
+
+    QTime currentTime = QTime::currentTime();
+    QString curTimeStr = currentTime.toString("hh:mm:ss.zzz");
+    displayStr = curTimeStr + " 发送: <br>" + displayStr;
+    ui->textBrowser->append(QString("<span style='color: blue;'>%1</span>").arg(displayStr));
+}
+
+void App::createShortcutButtons()
+{
+    // 清空现有的按钮
+    QLayoutItem *item;
+    while ((item = ui->verticalLayout_shortcuts->takeAt(0)) != nullptr) {
+        QWidget *widget = item->widget();
+        if (widget) {
+            widget->deleteLater();
+        }
+        delete item;
+    }
+
+    // 为每个快捷指令创建按钮
+    for (int i = 0; i < shortcuts.size(); ++i) {
+        const ShortcutCommand &cmd = shortcuts[i];
+        QPushButton *button = new QPushButton(cmd.name, this);
+        button->setToolTip(QString("类型: %1\n数据: %2").arg(cmd.type).arg(cmd.data));
+        
+        // 连接按钮点击信号
+        connect(button, &QPushButton::clicked, this, [this, cmd]() {
+            sendShortcutCommand(cmd);
+        });
+        
+        ui->verticalLayout_shortcuts->addWidget(button);
+    }
+
+    qInfo("Shortcuts updated: %d commands", shortcuts.size());
 }
