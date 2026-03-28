@@ -526,6 +526,7 @@ void App::createShortcutButtons()
         });
         
         ui->verticalLayout_shortcuts->addWidget(button);
+        qInfo("Created shortcut button: %s, type: %s, data: %s", cmd.name.toStdString().c_str(), cmd.type.toStdString().c_str(), cmd.data.toStdString().c_str());
     }
 
     qInfo("Shortcuts updated: %d commands", shortcuts.size());

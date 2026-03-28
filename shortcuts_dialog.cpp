@@ -31,6 +31,8 @@ void ShortcutsDialog::setShortcuts(const QList<ShortcutCommand> &shortcuts)
 
 void ShortcutsDialog::on_pushButton_add_clicked()
 {
+    // 确保添加模式下m_currentIndex为-1
+    m_currentIndex = -1;
     if (!validateInput()) {
         return;
     }
