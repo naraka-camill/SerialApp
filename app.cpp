@@ -196,8 +196,6 @@ void App::connectSignal()
         ui->textEdit->setTextCursor(cursor);
     });
 
-    // 快捷指令按钮
-    connect(ui->pushButton_shortcuts, &QPushButton::clicked, this, &App::on_pushButton_shortcuts_clicked);
 }
 
 void App::initTimer()
