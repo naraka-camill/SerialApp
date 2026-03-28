@@ -241,6 +241,10 @@ void App::initUI()
 App::~App()
 {
     qInfo("Delete Serial App");
+    
+    // 清理快捷指令按钮
+    clearShortcutButtons();
+
     delete ui;
 }
 
@@ -503,14 +507,7 @@ void App::sendShortcutCommand(const ShortcutCommand &cmd)
 void App::createShortcutButtons()
 {
     // 清空现有的按钮
-    QLayoutItem *item;
-    while ((item = ui->verticalLayout_shortcuts->takeAt(0)) != nullptr) {
-        QWidget *widget = item->widget();
-        if (widget) {
-            widget->deleteLater();
-        }
-        delete item;
-    }
+    clearShortcutButtons();
 
     // 为每个快捷指令创建按钮
     for (int i = 0; i < shortcuts.size(); ++i) {
@@ -528,4 +525,16 @@ void App::createShortcutButtons()
     }
 
     qInfo("Shortcuts updated: %d commands", shortcuts.size());
+}
+
+void App::clearShortcutButtons()
+{
+    QLayoutItem *item;
+    while ((item = ui->verticalLayout_shortcuts->takeAt(0)) != nullptr) {
+        QWidget *widget = item->widget();
+        if (widget) {
+            widget->deleteLater();
+        }
+        delete item;
+    }
 }

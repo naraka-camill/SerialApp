@@ -102,6 +102,7 @@ private:
     void saveShortcuts();
     void sendShortcutCommand(const ShortcutCommand &cmd);
     void createShortcutButtons();
+    void clearShortcutButtons();
 
 private slots:
     void on_pushButton_shortcuts_clicked();
