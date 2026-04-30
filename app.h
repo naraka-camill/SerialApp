@@ -19,10 +19,11 @@
 #include "3rdParty/nlohmann/json.hpp"
 
 
-#define THREAD_PERIOD_MS     (20)
-#define UI_PERIOD_MS         (20)
-#define SERIAL_TIMEOUT_MS    (20)
-#define AUTO_SAVE_PERIOD_MS_CNT  (1000 / UI_PERIOD_MS)  // 1s
+#define THREAD_PERIOD_MS         (20)
+#define UI_PERIOD_MS             (20)
+#define SERIAL_TIMEOUT_MS        (20)
+#define SLEEP_PERIOD_MS(ms)      (ms / UI_PERIOD_MS)
+#define AUTO_SAVE_PERIOD_MS_CNT  (SLEEP_PERIOD_MS(1000))  // 1s
 #define CONFIG_PATH (".cfg")
 
 
@@ -85,16 +86,24 @@ private:
     void initTimer();
     void initThread();
     void initAppCfg();
+
     void scanPort();
+
     void update();
     void updateUI();
+    void updateSerSta();
+    void updateScanPort();
+
     void connectSignal();
     void autosave(bool isForce = false);
 
     void setEnPortEdit(bool isEn);
     void writeSerial();
     void readSerial();
+
     QString stringToHexStr(std::string str);
+
+    void printLog(QString msg);
 
 };
 #endif // APP_H

@@ -51,7 +51,7 @@ App::App(QWidget *parent)
 
 void App::connectSignal()
 {
-        // 连接/断开
+    // 连接/断开
     connect(ui->pushButton, &QPushButton::clicked, this, [this](bool isCheck) {
         if (isCheck) {
             ui->pushButton->setChecked(false);
@@ -90,7 +90,7 @@ void App::connectSignal()
             qInfo("Serial open");
             ui->pushButton->setText("关闭串口");
             setEnPortEdit(false);
-            ui->textBrowser->append(QString("<span style='color: #cdcdcd;'>%1</span>").arg("串口已连接"));
+            printLog("串口已连接");
             ui->pushButton->setChecked(true);
         } else {
             ui->pushButton->setChecked(true);
@@ -103,7 +103,7 @@ void App::connectSignal()
             setEnPortEdit(true);
             qInfo("Serial close");
             ui->pushButton->setText("打开串口");
-            ui->textBrowser->append(QString("<span style='color: #cdcdcd;'>%1</span>").arg("串口关闭"));
+            printLog("串口关闭");
             ui->pushButton->setChecked(false);
         }
     });
@@ -211,15 +211,49 @@ void App::initThread()
     _readThread.detach();
 }
 
+void App::updateScanPort()
+{
+    static int scanCnt = 0;
+    if (scanCnt <= SLEEP_PERIOD_MS(1000)) {
+        ++scanCnt;
+        return;
+    }
+
+    scanCnt = 0;
+    scanPort();
+}
+
 void App::scanPort()
 {
     allPorts = serial::list_ports();
-    for (auto &port : allPorts) {
+
+    bool _isRescan = false;
+
+    if (allPorts.size() != allPortsDesc.size()) {
+        _isRescan = true;
+    } else {   
+        for (int i = 0; i < allPorts.size(); ++i) {
+            serial::PortInfo &port = allPorts[i];   
+            if (port.port != allPortsDesc[i].toStdString()) {
+                _isRescan = true;
+                break;
+            }
+        }
+    }
+        
+    if (!_isRescan) {
+        return; 
+    }
+
+    allPortsDesc.clear();
+    ui->comboBox->clear();
+
+    for (serial::PortInfo &port : allPorts) {
         QString portName = QString::fromStdString(port.port);
         allPortsDesc.push_back(portName);
     }
+
     QStringList strL = QStringList::fromVector(allPortsDesc);
-    ui->comboBox->clear();
     ui->comboBox->addItems(strL);
 }
 
@@ -263,8 +297,14 @@ void App::writeSerial()
             continue;
         }
         std::lock_guard<std::mutex> _lock(sendMutex);
-        ser.write(sendMsg);
+
+        try {
+            ser.write(sendMsg);
+        } catch(const serial::IOException &e) {
+            qWarning("Serial write error: %s", e.what());
+        }
         sendMsg.clear();
+
     }
 }
 
@@ -278,7 +318,35 @@ void App::readSerial()
         std::string _recvStr;
         {
             std::lock_guard<std::mutex> _lock(serMutex);
-            _recvStr = ser.read(200);
+            
+            try {
+                _recvStr = ser.read(200);
+            } catch(const serial::IOException &e) {
+                qWarning("Serial read error: %s", e.what());
+                ser.close();
+                
+                int retryCnt = 0;
+                while (!ser.isOpen() && retryCnt < 10) {
+                    try {
+                        printLog(QString("串口异常关闭，正在尝试重新连接...(%1/10)").arg(retryCnt + 1));
+                        ser.open();
+                    } catch(const serial::IOException &e) {
+                        qWarning("Serial reopen error: %s", e.what());
+                    } catch(const std::exception &e) {
+                        qWarning("Serial reopen error: %s", e.what());
+                    }
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                    ++retryCnt;
+                }
+
+                if (ser.isOpen()) {
+                    printLog("串口重新连接成功！");
+                } else {
+                    printLog("串口重新连接失败，请检查串口状态！");
+                }
+
+                continue;
+            }
         }
             if (_recvStr.empty()) {
             continue;
@@ -292,6 +360,7 @@ void App::readSerial()
 
 void App::update()
 {
+    updateScanPort();
     updateUI();
     autosave();
 }
@@ -321,6 +390,21 @@ void App::updateUI()
     receiveMsg.clear();
 }
 
+
+// 暂未使用
+void App::updateSerSta()
+{
+    if (ser.isOpen()) {
+        ui->pushButton->setChecked(true);
+        ui->pushButton->setText("关闭串口");
+        setEnPortEdit(false);
+    } else {
+        ui->pushButton->setChecked(false);
+        ui->pushButton->setText("打开串口");
+        setEnPortEdit(true);
+    }
+}
+
 QString App::stringToHexStr(std::string str)
 {
     QString data = QString::fromStdString(str);
@@ -335,6 +419,11 @@ QString App::stringToHexStr(std::string str)
     }
 
     return spacedHexString.toUpper();
+}
+
+void App::printLog(QString msg)
+{
+    ui->textBrowser->append(QString("<span style='color: #cdcdcd;'>%1</span>").arg("[log]:" + msg));
 }
 
 void App::initAppCfg()
