@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "脚本所在目录: $SCRIPT_DIR"
