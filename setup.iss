@@ -3,8 +3,8 @@
 ; 仅供非商业使用
 
 #define MyAppName "Serial_app"
-#define MyAppVersion "1.3.0"
-#define MyAppPublisher "camill"
+#define MyAppVersion "1.3.1"
+#define MyAppPublisher "naraka-camill"
 #define MyAppExeName "Serial.exe"
 
 [Setup]
@@ -33,7 +33,7 @@ InfoAfterFile=D:\QT\project\qt_serial\LICENSE.txt
 ; 移除以下行以在管理安装模式下运行 (为所有用户安装)。
 PrivilegesRequired=lowest
 OutputDir=D:\QT\project\qt_serial\build
-OutputBaseFilename=Serial_app_setup-v1.3.0
+OutputBaseFilename=Serial_app_setup-v{#MyAppVersion}
 SolidCompression=yes
 WizardStyle=modern dynamic
 
