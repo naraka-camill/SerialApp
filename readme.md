@@ -50,6 +50,12 @@ Serial/
 └── build/                     # 构建输出
 ```
 
+## 快速使用
+
+下载最新版本的安装包：
+https://github.com/naraka-camill/SerialApp/releases
+
+
 ## 🚀 构建
 
 ### 环境
