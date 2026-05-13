@@ -17,6 +17,7 @@
 
 #include "3rdParty/serial/serial.h"
 #include "3rdParty/nlohmann/json.hpp"
+#include "shortcuts_dialog.h"
 
 
 #define THREAD_PERIOD_MS         (20)
@@ -25,6 +26,7 @@
 #define SLEEP_PERIOD_MS(ms)      (ms / UI_PERIOD_MS)
 #define AUTO_SAVE_PERIOD_MS_CNT  (SLEEP_PERIOD_MS(1000))  // 1s
 #define CONFIG_PATH (".cfg")
+#define SHORTCUTS_PATH (".shortcuts")
 
 
 struct AppCfg
@@ -81,6 +83,7 @@ private:
     std::string sendMsg;
 
     AppCfg appCfg;
+    QList<ShortcutCommand> shortcuts;
 
     void initUI();
     void initTimer();
@@ -102,6 +105,14 @@ private:
     void readSerial();
 
     QString stringToHexStr(std::string str);
+    void loadShortcuts();
+    void saveShortcuts();
+    void sendShortcutCommand(const ShortcutCommand &cmd);
+    void createShortcutButtons();
+    void clearShortcutButtons();
+
+private slots:
+    void on_pushButton_shortcuts_clicked();
 
     void printLog(QString msg);
 

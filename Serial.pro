@@ -14,6 +14,7 @@ INCLUDEPATH += src \
 SOURCES += \
     main.cpp \
     app.cpp \
+    shortcuts_dialog.cpp \
     src/3rdParty/serial/impl/list_ports/list_ports_linux.cpp \
     src/3rdParty/serial/impl/list_ports/list_ports_osx.cpp \
     src/3rdParty/serial/impl/list_ports/list_ports_win.cpp \
@@ -23,6 +24,7 @@ SOURCES += \
 
 HEADERS += \
     app.h \
+    shortcuts_dialog.h \
     src/3rdParty/nlohmann/json.hpp \
     src/3rdParty/serial/impl/unix.h \
     src/3rdParty/serial/impl/win.h \
@@ -30,7 +32,8 @@ HEADERS += \
     src/3rdParty/serial/v8stdint.h
 
 FORMS += \
-    app.ui
+    app.ui \
+    shortcuts_dialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
